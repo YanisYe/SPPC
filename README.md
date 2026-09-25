@@ -1,8 +1,8 @@
 # SPPC
 
-SPPC is a **Structure-Preserving Predictor-Corrector** for data-driven weather forecasting on a spherical grid. It combines a neural predictor with explicit physical operators, then applies a structured residual corrector for multi-step forecasts.
+SPPC is a **Structure-Preserving Predictor-Corrector** for data-driven weather forecasting on a spherical grid. It combines a neural predictor with explicit physical operators and a structured residual corrector for autoregressive forecasts.
 
-The included configuration uses 6-hour ERA5 data on a `32 x 64` latitude-longitude grid and predicts five variables:
+The provided configuration uses 6-hour ERA5 data on a `32 x 64` latitude-longitude grid and predicts five variables:
 
 - 2 m temperature (`T2m`)
 - 850 hPa temperature (`T850`)
@@ -12,7 +12,7 @@ The included configuration uses 6-hour ERA5 data on a `32 x 64` latitude-longitu
 
 ## Method
 
-The predictor combines a spherical neural backbone with Hodge wind projection, geostrophic wind estimation, semi-Lagrangian transport, and conservative shared-edge divergence. The corrector learns structured residual updates for scalar fields and wind, followed by a four-step joint fine-tuning phase.
+The predictor combines a spherical neural backbone with Hodge wind projection, geostrophic wind estimation, semi-Lagrangian transport, and conservative shared-edge divergence. The corrector learns structured residual updates for scalar fields and wind.
 
 Training has three stages:
 
@@ -23,17 +23,18 @@ Training has three stages:
 ## Repository layout
 
 ```text
-configs/          Training and evaluation configurations
-checkpoints/      Pretrained predictor and corrector checkpoints (Git LFS)
+configs/          Training configurations
+checkpoints/      Final pretrained SPPC checkpoint (Git LFS)
 sppc/data/        ERA5 validation, statistics, and cache preparation
 sppc/models/      Predictor, corrector, spherical backbone, and physics operators
 sppc/training/    Training pipelines and objectives
-sppc/evaluation/  Held-out evaluation and metrics
+sppc/evaluation/  Rollout evaluation and metrics
+sppc/evaluate.py  Evaluation entry point for the bundled checkpoint
 ```
 
 ## Installation
 
-Python 3.11 or newer and an NVIDIA GPU are required for the provided training and evaluation commands. The reference environment uses PyTorch 2.6 with CUDA 12.4.
+Python 3.11 or newer and an NVIDIA GPU are required. The reference environment uses PyTorch 2.6 with CUDA 12.4.
 
 ```bash
 git clone https://github.com/YanisYe/SPPC.git
@@ -131,33 +132,13 @@ CUDA_VISIBLE_DEVICES=0 python -m sppc.training.train_corrector \
 
 ## Evaluation
 
-Evaluate the predictor at 6-36 hour lead times:
+The bundled checkpoint contains the final predictor-corrector EMA weights and normalization metadata. After preparing `cache/era5/test`, evaluate 6-36 hour lead times with:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python -m sppc.evaluation.evaluate_predictor \
-  --config configs/ssp500.json \
-  --checkpoint checkpoints/ssp500/best.pt \
-  --output results/ssp500_test_6_36.json \
-  --batch-size 32 \
-  --leads 6,12,18,24,30,36
+CUDA_VISIBLE_DEVICES=0 python -m sppc.evaluate
 ```
 
-Evaluate the predictor-corrector pipeline:
-
-```bash
-CUDA_VISIBLE_DEVICES=0 python -m sppc.evaluation.evaluate_corrector \
-  --config configs/structured_corrector_a300_b200.json \
-  --checkpoint checkpoints/structured_corrector_a300_b200/final_ema.pt \
-  --output results/sppc_test_6_36.json \
-  --batch-size 32
-```
-
-Pretrained checkpoints are included at:
-
-```text
-checkpoints/ssp500/best.pt
-checkpoints/structured_corrector_a300_b200/final_ema.pt
-```
+The default output is `results/sppc_test_6_36.json`. The output path and batch size can be changed with `--output` and `--batch-size`.
 
 ## License
 

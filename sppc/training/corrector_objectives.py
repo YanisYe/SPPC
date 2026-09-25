@@ -262,8 +262,7 @@ class CorrectorEMA:
     def load_state_dict(self, state: Mapping[str, Any]) -> None:
         self.decay = float(state["decay"])
         self.shadow = {
-            name.replace("stage1.", "predictor."):
-            value.detach().float().cpu().clone()
+            name: value.detach().float().cpu().clone()
             for name, value in state["shadow"].items()
         }
 

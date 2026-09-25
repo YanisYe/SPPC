@@ -11,7 +11,7 @@ from .common import atomic_json_write, atomic_torch_save, learning_rate_for_upda
 from .checkpoints import configured_epochs, phase_a_checkpoint_path, phase_status_payload
 from ..models.corrector import StructuredCorrector
 from .corrector_data import CorrectorCacheDataset, FourStepCorrectorDataset
-from ..evaluation.corrector_protocol import evaluate_corrector, choose_phase_a_checkpoint, choose_phase_b_checkpoint, FINAL_LEADS
+from ..evaluation.rollout import evaluate_corrector, choose_phase_a_checkpoint, choose_phase_b_checkpoint, FINAL_LEADS
 from .corrector_objectives import CorrectorEMA, PhaseAProtocol, PhaseBProtocol, accumulation_plan, gradients_are_finite, phase_a_objective, phase_b_rollout_objective, set_phase_a_trainable, set_phase_b_trainable
 from ..evaluation.metrics import evaluate_forecast
 from ..models.predictor_adapter import PredictorAdapter
@@ -22,8 +22,11 @@ ROOT=Path(__file__).parents[2]
 def load_payloads(config_path):
  cfg=json.loads(Path(config_path).read_text());audit=json.loads((ROOT/'results/data_audit.json').read_text());stats=audit['normalization'];lat=torch.tensor(audit['grid']['latitude'],dtype=torch.float32);res=np.load(ROOT/cfg['data'].get('residual_stats','results/predictor_residual_stats.npz'));return cfg,audit,stats,lat,res
 
+def build_predictor(stats,lat,device):
+ return PredictorAdapter(StructuredPredictor(lat.deg2rad(),stats['state_std'],stats['delta_std']).to(device))
+
 def load_predictor(cfg,stats,lat,device):
- m=StructuredPredictor(lat.deg2rad(),stats['state_std'],stats['delta_std']).to(device);p=ROOT/cfg['predictor_checkpoint'];s=torch.load(p,map_location='cpu',weights_only=False);m.load_state_dict(s['model'],strict=True);return PredictorAdapter(m),p
+ m=build_predictor(stats,lat,device);p=ROOT/cfg['predictor_checkpoint'];s=torch.load(p,map_location='cpu',weights_only=False);m.predictor.load_state_dict(s['model'],strict=True);return m,p
 
 def build_corrector(cfg,stats,lat,res,device):
  kw=dict(state_mean=stats['state_mean'],state_std=stats['state_std'],std_dx=stats['delta_std'],std_res_wind=res['std_res_wind'],latitudes=lat.deg2rad())
