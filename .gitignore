@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+
+# Generated artifacts
+cache/
+results/
+logs/
+
+# Local data and tooling
+data/
+build/
+third_party/
+
+# Editors / OS
+.DS_Store
+.vscode/
+.idea/

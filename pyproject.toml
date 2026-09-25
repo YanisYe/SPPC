@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sppc-weather"
+version = "0.1.0"
+description = "Structure-Preserving Predictor-Corrector for spherical weather forecasting"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [{name = "SPPC Authors"}]
+dependencies = [
+  "numpy>=1.26,<3",
+  "torch>=2.6",
+  "torch-harmonics @ git+https://github.com/NVIDIA/torch-harmonics.git@d35d72744",
+]
+
+[tool.setuptools.packages.find]
+include = ["sppc*"]

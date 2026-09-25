@@ -1,0 +1,70 @@
+{
+  "version": 2,
+  "corrector": "full",
+  "seed": 0,
+  "predictor_checkpoint": "checkpoints/ssp500/best.pt",
+  "data": {
+    "cache_root": "cache/corrector",
+    "train_years": [2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015],
+    "validation_years": [2016],
+    "test_years": [2017, 2018],
+    "variables": ["T2m", "T850", "Z500", "U10", "V10"],
+    "interval_hours": 6,
+    "residual_stats": "results/predictor_residual_stats.npz",
+    "cache_manifest": "results/corrector_cache_manifest.json"
+  },
+  "phase_a": {
+    "epochs": 300,
+    "effective_global_batch_size": 128,
+    "micro_batch_size": 128,
+    "gradient_accumulation": 1,
+    "optimizer": "AdamW",
+    "learning_rate": 0.0003,
+    "betas": [0.9, 0.95],
+    "eps": 1e-8,
+    "weight_decay_matrix": 0.05,
+    "weight_decay_bias_norm_gain": 0.0,
+    "warmup_epochs": 1,
+    "scheduler": "cosine",
+    "minimum_learning_rate": 3e-6,
+    "gradient_clip_norm": 1.0,
+    "mixed_precision": "bf16",
+    "ema_decay": 0.999
+  },
+  "phase_b": {
+    "rollout_steps": 4,
+    "epochs": 200,
+    "effective_global_batch_size": 108,
+    "micro_batch_size": 36,
+    "gradient_accumulation": 3,
+    "optimizer": "AdamW",
+    "corrector_learning_rate": 3e-5,
+    "predictor_tail_learning_rate": 1e-5,
+    "betas": [0.9, 0.95],
+    "eps": 1e-8,
+    "weight_decay_matrix": 0.05,
+    "weight_decay_bias_norm_gain": 0.0,
+    "warmup_epochs": 1,
+    "scheduler": "cosine",
+    "minimum_lr_ratio": 0.1,
+    "gradient_clip_norm": 1.0,
+    "mixed_precision": "bf16",
+    "ema_decay": 0.999,
+    "lead_weights": [0.3, 0.2, 0.2, 0.3],
+    "channel_weights": [1, 1, 1, 2, 2],
+    "validation_each_epoch_hours": [6, 24],
+    "top_k_at_24h": 3,
+    "candidate_validation_hours": [6, 12, 18, 24, 30, 36]
+  },
+  "evaluation": {
+    "leads_hours": [6, 12, 18, 24, 30, 36],
+    "test_once": true,
+    "selection_split": "validation",
+    "metrics": ["area_weighted_rmse", "ClimODE_ACC", "mean_normalized_rmse"]
+  },
+  "outputs": {
+    "run_dir": "checkpoints/structured_corrector_a300_b200",
+    "phase_a_checkpoint": "phase_a_best_ema.pt",
+    "phase_b_checkpoint": "final_ema.pt"
+  }
+}
